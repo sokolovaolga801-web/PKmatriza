@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Матрица приоритетов ПК: интерактивный выбор</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #f0f4f8;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #1e2a3e;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* шапка */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 1.9rem;
+            margin: 0 0 8px 0;
+            background: linear-gradient(135deg, #0b3b5f, #1e6f5c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .sub {
+            color: #2c3e50;
+            border-left: 4px solid #e67e22;
+            padding-left: 16px;
+            background: #fff8e7;
+            display: inline-block;
+            border-radius: 12px;
+            padding: 8px 20px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* карточки кейсов */
+        .cases-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+            flex: 1;
+            min-width: 260px;
+            max-width: 340px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 30px -12px rgba(0,0,0,0.15);
+        }
+        .card-header {
+            padding: 18px 20px 8px 20px;
+            font-weight: 800;
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+            background: #f9fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .card-header span {
+            font-size: 1rem;
+            font-weight: 400;
+            background: #eef2ff;
+            padding: 2px 10px;
+            border-radius: 30px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .card-body {
+            padding: 18px 20px 20px;
+        }
+        .risk-badge, .cost-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 12px;
+        }
+        .risk-high {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-left: 3px solid #b91c1c;
+        }
+        .risk-low {
+            background: #e6f7e6;
+            color: #2e7d32;
+            border-left: 3px solid #2e7d32;
+        }
+        .cost-high {
+            background: #ffe6e2;
+            color: #c2410c;
+        }
+        .cost-low {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .desc {
+            margin: 14px 0;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #2d3e50;
+            font-weight: 500;
+        }
+        .badge-container {
+            margin: 12px 0 8px;
+        }
+
+        /* зона голосования – стикеры (drag & drop + клик) */
+        .voting-area {
+            background: #ffffffdd;
+            backdrop-filter: blur(2px);
+            background: white;
+            border-radius: 40px;
+            padding: 20px 20px 28px;
+            margin: 30px 0 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid #cbd5e1;
+        }
+        .priority-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .priority-column {
+            flex: 1;
+            min-width: 200px;
+            background: #f8fafc;
+            border-radius: 32px;
+            padding: 16px 12px 20px;
+            text-align: center;
+            transition: all 0.1s;
+            border: 2px dashed #cbd5e1;
+        }
+        .priority-column.highlight-drop {
+            background-color: #fff3e3;
+            border-color: #e67e22;
+        }
+        .priority-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid currentColor;
+            display: inline-block;
+        }
+        .priority-title.red {
+            color: #b91c1c;
+            border-bottom-color: #b91c1c;
+        }
+        .priority-title.orange {
+            color: #e67e22;
+            border-bottom-color: #e67e22;
+        }
+        .priority-title.gray {
+            color: #5b6e8c;
+            border-bottom-color: #94a3b8;
+        }
+        .sticker-zone {
+            min-height: 140px;
+            background: #ffffff;
+            border-radius: 28px;
+            margin-top: 12px;
+            padding: 16px 8px;
+            transition: background 0.1s;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 1px 2px #00000008, 0 1px 2px white;
+        }
+        .case-sticker {
+            background: #1e293b;
+            color: white;
+            border-radius: 60px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            margin: 6px 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            gap: 8px;
+            cursor: grab;
+            transition: 0.1s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            user-select: none;
+        }
+        .case-sticker:active {
+            cursor: grabbing;
+        }
+        .case-sticker.dragging {
+            opacity: 0.4;
+        }
+        .case-sticker.A { background: #7f1a1a; border-left: 5px solid #f97316; }
+        .case-sticker.B { background: #2c5f2d; border-left: 5px solid #ffd966; }
+        .case-sticker.C { background: #0f3b5f; border-left: 5px solid #38bdf8; }
+
+        /* Стили для подсветки правильных/неправильных ответов */
+        .sticker-zone .case-sticker.correct-sticker {
+            box-shadow: 0 0 0 3px #2e7d32, 0 0 0 6px #a5d6a7;
+            filter: brightness(1.02);
+            transition: all 0.1s ease;
+        }
+        .sticker-zone .case-sticker.wrong-sticker {
+            box-shadow: 0 0 0 3px #b91c1c, 0 0 0 6px #ffcdd2;
+            filter: brightness(1.02);
+            transition: all 0.1s ease;
+        }
+
+        .info-message {
+            background: #eef2ff;
+            border-radius: 28px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin: 20px 0 16px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            border: none;
+            padding: 10px 32px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #e2e8f0;
+            color: #1e293b;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .btn-primary {
+            background: #1e6f5c;
+            color: white;
+            border-bottom: 3px solid #0f4c3f;
+        }
+        .btn-primary:hover {
+            background: #0f5c4a;
+            transform: scale(0.97);
+        }
+        .btn-secondary {
+            background: #475569;
+            color: white;
+            border-bottom: 3px solid #2d3a4b;
+        }
+        .btn-secondary:hover {
+            background: #2d3a4b;
+            transform: scale(0.97);
+        }
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            margin-top: 30px;
+            color: #5b6e8c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🧩 Матрица приоритетов</h1>
+        <div class="sub">🎯 Бюджет только на <strong>ОДНО</strong> мероприятие. Куда вложимся?</div>
+    </div>
+
+    <!-- три кейса -->
+    <div class="cases-grid">
+        <div class="card" data-case="A">
+            <div class="card-header">Кейс А <span>⚠️ Кислота</span></div>
+            <div class="card-body">
+                <div class="badge-container">
+                    <span class="risk-badge risk-high">🔥 Риск: ВЫСОКИЙ</span>
+                    <span class="cost-badge cost-high">💰 Затраты: ВЫСОКИЕ (замена трубы)</span>
+                </div>
+                <div class="desc">📉 Течь серной кислоты на трубопроводе — прямая угроза ожогов, отравления, разрушения оборудования.</div>
+            </div>
+        </div>
+        <div class="card" data-case="B">
+            <div class="card-header">Кейс Б <span>🏷️ Надпись</span></div>
+            <div class="card-body">
+                <div class="badge-container">
+                    <span class="risk-badge risk-low">🍃 Риск: НИЗКИЙ</span>
+                    <span class="cost-badge cost-low">✏️ Затраты: НИЗКИЕ (маркер + скотч)</span>
+                </div>
+                <div class="desc">🔘 Стёрлась надпись «аварийный стоп» на пульте — в стрессовой ситуации возможна ошибка.</div>
+            </div>
+        </div>
+        <div class="card" data-case="C">
+            <div class="card-header">Кейс В <span>⚡ Заземление</span></div>
+            <div class="card-body">
+                <div class="badge-container">
+                    <span class="risk-badge risk-high">🔥 Риск: ВЫСОКИЙ</span>
+                    <span class="cost-badge cost-low">📋 Затраты: НИЗКИЕ (назначить ответственного + журнал)</span>
+                </div>
+                <div class="desc">📆 Нет графика проверки заземлений, проверки «как вспомнят» — высокий риск поражения током.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- интерактивная зона: перетаскивание и клик-стикеры -->
+    <div class="voting-area">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+            <div><strong>📌 Перетащите или кликните по стикеру</strong> — поместите каждый кейс в нужную категорию:</div>
+        </div>
+        <div class="priority-row" id="priorityRow">
+            <!-- колонка: НЕМЕДЛЕННО (правильный ответ: кейс А) -->
+            <div class="priority-column" data-priority="immediate">
+                <div class="priority-title red">⚡ НЕМЕДЛЕННО</div>
+                <div class="sticker-zone" data-zone="immediate">
+                    <div class="zone-placeholder" style="color:#a0abb9; font-size:0.8rem; text-align:center; padding:8px;">Перетащите кейс сюда</div>
+                </div>
+                <div style="font-size:0.7rem; margin-top: 8px; color:#4b5563;">Высокий риск + Высокие затраты → немедленно начинаем решать</div>
+            </div>
+            <!-- колонка: План развития 1 очередь (правильный ответ: кейс С) -->
+            <div class="priority-column" data-priority="plan1">
+                <div class="priority-title orange">📅 План развития (1 очередь)</div>
+                <div class="sticker-zone" data-zone="plan1">
+                    <div class="zone-placeholder" style="color:#a0abb9; font-size:0.8rem; text-align:center; padding:8px;">Перетащите кейс сюда</div>
+                </div>
+                <div style="font-size:0.7rem; margin-top: 8px; color:#4b5563;">Высокий риск + Низкие затраты → быстрое системное решение</div>
+            </div>
+            <!-- колонка: Отложить / вторая очередь (правильный ответ: кейс Б) -->
+            <div class="priority-column" data-priority="defer">
+                <div class="priority-title gray">⏳ Отложить / 2 очередь</div>
+                <div class="sticker-zone" data-zone="defer">
+                    <div class="zone-placeholder" style="color:#a0abb9; font-size:0.8rem; text-align:center; padding:8px;">Перетащите кейс сюда</div>
+                </div>
+                <div style="font-size:0.7rem; margin-top: 8px; color:#4b5563;">Низкий риск → можно спокойно запланировать позже</div>
+            </div>
+        </div>
+        <div class="info-message">
+            <span>💡 <strong>Подсказка:</strong> Кликните по стикеру и выберите номер категории (1-3). Или перетащите мышкой. После распределения нажмите «Проверить» — верные ответы подсветятся зелёным, неверные — красным.</span>
+            <span style="font-weight:500;">🎯 Логика: риск и неотложность</span>
+        </div>
+
+        <!-- исходные стикеры (неразмещённые) -->
+        <div style="background:#f1f5f9; border-radius: 48px; padding: 12px 20px; margin-top: 8px;">
+            <div style="font-weight:600; margin-bottom: 10px;">📦 Доступные кейсы (перетяни или кликни):</div>
+            <div id="stickerPalette" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                <div class="case-sticker A" data-case-id="A">🔴 Кейс А: кислота</div>
+                <div class="case-sticker B" data-case-id="B">🟢 Кейс Б: надпись</div>
+                <div class="case-sticker C" data-case-id="C">🔵 Кейс В: заземление</div>
+            </div>
+        </div>
+
+        <!-- КНОПКИ: Проверить + Сбросить всё (внизу) -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="checkBtn">✅ Проверить</button>
+            <button class="btn btn-secondary" id="resetBtn">⟳ Сбросить всё</button>
+        </div>
+    </div>
+
+    <footer>🧪 Распределите кейсы по приоритетам и нажмите «Проверить». Зелёная рамка — верно, красная — ошибка.</footer>
+</div>
+
+<script>
+    // DOM элементы
+    const zones = {
+        immediate: document.querySelector('[data-zone="immediate"]'),
+        plan1: document.querySelector('[data-zone="plan1"]'),
+        defer: document.querySelector('[data-zone="defer"]')
+    };
+    const palette = document.getElementById('stickerPalette');
+    const resetBtn = document.getElementById('resetBtn');
+    const checkBtn = document.getElementById('checkBtn');
+
+    // текущая привязка: { caseId: zoneKey } , где zoneKey: 'immediate', 'plan1', 'defer' или null (в палитре)
+    let assignment = {
+        A: null,
+        B: null,
+        C: null
+    };
+
+    // Функция отрисовки: полностью перестраиваем зоны и палитру (без маркеров правильности, только чистое размещение)
+    function render() {
+        // очищаем зоны
+        for (let zoneKey of ['immediate', 'plan1', 'defer']) {
+            const zoneDiv = zones[zoneKey];
+            if (zoneDiv) {
+                zoneDiv.innerHTML = '';
+                const placeholder = document.createElement('div');
+                placeholder.className = 'zone-placeholder';
+                placeholder.style.cssText = 'color:#a0abb9; font-size:0.8rem; text-align:center; padding:8px;';
+                placeholder.innerText = 'Перетащите кейс сюда';
+                zoneDiv.appendChild(placeholder);
+            }
+        }
+
+        // заполняем зоны согласно assignment (без классов подсветки)
+        for (let [caseId, zoneKey] of Object.entries(assignment)) {
+            if (zoneKey && zones[zoneKey]) {
+                const sticker = createStickerElement(caseId, false);
+                const zoneDiv = zones[zoneKey];
+                const placeholder = zoneDiv.querySelector('.zone-placeholder');
+                if (placeholder && zoneDiv.children.length === 1 && zoneDiv.children[0] === placeholder) {
+                    zoneDiv.removeChild(placeholder);
+                }
+                zoneDiv.appendChild(sticker);
+            }
+        }
+
+        // обновляем палитру: показываем только те кейсы, которые не назначены
+        palette.innerHTML = '';
+        for (let caseId of ['A', 'B', 'C']) {
+            if (assignment[caseId] === null) {
+                const sticker = createStickerElement(caseId, false);
+                palette.appendChild(sticker);
+            }
+        }
+        if (palette.children.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.innerText = '✅ Все кейсы распределены! Нажмите "Проверить", чтобы увидеть подсветку.';
+            emptyMsg.style.padding = '16px';
+            emptyMsg.style.color = '#2c5f2d';
+            emptyMsg.style.fontStyle = 'italic';
+            palette.appendChild(emptyMsg);
+        }
+    }
+
+    // Создать стикер. Если параметр withHighlight=true, то добавит классы correct-sticker / wrong-sticker на основе текущей позиции
+    function createStickerElement(caseId, withHighlight = false) {
+        const sticker = document.createElement('div');
+        sticker.className = `case-sticker ${caseId}`;
+        sticker.setAttribute('data-case-id', caseId);
+        let text = '';
+        if (caseId === 'A') text = '🔴 Кейс А: кислота';
+        if (caseId === 'B') text = '🟢 Кейс Б: надпись';
+        if (caseId === 'C') text = '🔵 Кейс В: заземление';
+        sticker.innerText = text;
+        sticker.setAttribute('draggable', 'true');
+        
+        // drag start
+        sticker.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', caseId);
+            e.dataTransfer.effectAllowed = 'move';
+            sticker.classList.add('dragging');
+        });
+        sticker.addEventListener('dragend', (e) => {
+            sticker.classList.remove('dragging');
+        });
+
+        // клик по стикеру
+        sticker.addEventListener('click', (e) => {
+            e.stopPropagation();
+            let zoneChoice = prompt(`Выберите приоритет для ${sticker.innerText}:\n1 - НЕМЕДЛЕННО\n2 - План развития (1 очередь)\n3 - Отложить / 2 очередь\n0 - Вернуть в список`);
+            if (zoneChoice === null) return;
+            let targetZone = null;
+            if (zoneChoice === '1') targetZone = 'immediate';
+            else if (zoneChoice === '2') targetZone = 'plan1';
+            else if (zoneChoice === '3') targetZone = 'defer';
+            else if (zoneChoice === '0') targetZone = null;
+            else { alert('Введите 1, 2, 3 или 0'); return; }
+            const currentZone = assignment[caseId];
+            if (targetZone !== currentZone) {
+                assignment[caseId] = targetZone;
+                render(); // перерисовка без подсветки
+            } else if (targetZone === currentZone && targetZone !== null) {
+                alert('Этот кейс уже находится в выбранной категории');
+            }
+        });
+
+        if (withHighlight) {
+            // Определяем, правильная ли позиция
+            const currentZone = assignment[caseId];
+            let isCorrect = false;
+            if (caseId === 'A' && currentZone === 'immediate') isCorrect = true;
+            else if (caseId === 'C' && currentZone === 'plan1') isCorrect = true;
+            else if (caseId === 'B' && currentZone === 'defer') isCorrect = true;
+            else isCorrect = false;
+            
+            if (currentZone !== null) {
+                if (isCorrect) {
+                    sticker.classList.add('correct-sticker');
+                } else {
+                    sticker.classList.add('wrong-sticker');
+                }
+            }
+        }
+        
+        return sticker;
+    }
+
+    // Применить подсветку: перерисовать все зоны с флагом withHighlight = true
+    function applyHighlight() {
+        // пересоздаём содержимое зон с подсветкой, не меняя assignment
+        for (let zoneKey of ['immediate', 'plan1', 'defer']) {
+            const zoneDiv = zones[zoneKey];
+            if (zoneDiv) {
+                zoneDiv.innerHTML = '';
+                const placeholder = document.createElement('div');
+                placeholder.className = 'zone-placeholder';
+                placeholder.style.cssText = 'color:#a0abb9; font-size:0.8rem; text-align:center; padding:8px;';
+                placeholder.innerText = 'Перетащите кейс сюда';
+                zoneDiv.appendChild(placeholder);
+            }
+        }
+        for (let [caseId, zoneKey] of Object.entries(assignment)) {
+            if (zoneKey && zones[zoneKey]) {
+                const sticker = createStickerElement(caseId, true); // с подсветкой
+                const zoneDiv = zones[zoneKey];
+                const placeholder = zoneDiv.querySelector('.zone-placeholder');
+                if (placeholder && zoneDiv.children.length === 1 && zoneDiv.children[0] === placeholder) {
+                    zoneDiv.removeChild(placeholder);
+                }
+                zoneDiv.appendChild(sticker);
+            }
+        }
+        // палитру перерисовываем без подсветки
+        palette.innerHTML = '';
+        for (let caseId of ['A', 'B', 'C']) {
+            if (assignment[caseId] === null) {
+                const sticker = createStickerElement(caseId, false);
+                palette.appendChild(sticker);
+            }
+        }
+        if (palette.children.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.innerText = '✅ Все кейсы распределены!';
+            emptyMsg.style.padding = '16px';
+            emptyMsg.style.color = '#2c5f2d';
+            emptyMsg.style.fontStyle = 'italic';
+            palette.appendChild(emptyMsg);
+        }
+    }
+
+    // настройка drop зон (drag & drop)
+    function setupDropZones() {
+        for (let [zoneKey, zoneElement] of Object.entries(zones)) {
+            if (!zoneElement) continue;
+            zoneElement.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                zoneElement.closest('.priority-column')?.classList.add('highlight-drop');
+            });
+            zoneElement.addEventListener('dragleave', (e) => {
+                zoneElement.closest('.priority-column')?.classList.remove('highlight-drop');
+            });
+            zoneElement.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zoneElement.closest('.priority-column')?.classList.remove('highlight-drop');
+                const caseId = e.dataTransfer.getData('text/plain');
+                if (!caseId || !['A','B','C'].includes(caseId)) return;
+                let newZone = null;
+                if (zoneKey === 'immediate') newZone = 'immediate';
+                else if (zoneKey === 'plan1') newZone = 'plan1';
+                else if (zoneKey === 'defer') newZone = 'defer';
+                if (newZone) {
+                    if (assignment[caseId] !== newZone) {
+                        assignment[caseId] = newZone;
+                        render(); // рисуем без подсветки
+                    }
+                }
+            });
+        }
+    }
+
+    // Логика ПРОВЕРКИ (только подсветка, без всплывающих сообщений)
+    function checkWithHighlight() {
+        const allAssigned = assignment.A !== null && assignment.B !== null && assignment.C !== null;
+        if (!allAssigned) {
+            // просто ничего не делаем — нет всплывашек, но можно слегка подсветить? по желанию просто игнорируем.
+            // Чтобы пользователь понял, что не всё распределено, оставим без подсветки или сделаем молчаливую реакцию.
+            // Поскольку тосты убраны, никаких сообщений не показываем.
+            return;
+        }
+        // Применяем визуальную подсветку (зеленый/красный)
+        applyHighlight();
+    }
+
+    function resetAssignment() {
+        assignment = { A: null, B: null, C: null };
+        render(); // чистая перерисовка без подсветки
+    }
+
+    // инициализация
+    function init() {
+        resetAssignment();
+        setupDropZones();
+        resetBtn.addEventListener('click', () => resetAssignment());
+        checkBtn.addEventListener('click', () => checkWithHighlight());
+    }
+    
+    init();
+</script>
+</body>
+</html>
